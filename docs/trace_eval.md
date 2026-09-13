@@ -1,8 +1,10 @@
 # 📊 BÁO CÁO THU HOẠCH NGHIỆM THU BÀI LAB 3 (BƯỚC 3 — SUBMISSION ARTIFACT)
 
-> **Họ và Tên Học viên:** [Điền Họ và Tên]  
-> **Mã Sinh Viên / Mã Học viên:** [Điền MSSV]  
-> **Chủ đề Lựa chọn:** [Điền tên chủ đề đã chọn từ docs/DANH_SACH_DE_TAI.md hoặc Đề tài Mở]  
+> **Họ và Tên Học viên:** Phạm Đình Duy
+>
+> **Mã Sinh Viên / Mã Học viên:** 2A202602913
+>
+> **Chủ đề Lựa chọn:** Trợ lý Nhân sự VinFast (HR Assistant)
 
 ---
 
@@ -10,11 +12,11 @@
 
 | Tiêu chí Đánh giá | Mức độ (1 - 5) | Giải trình chi tiết lý do chọn điểm |
 | :--- | :---: | :--- |
-| **1. Multi-step Reasoning** | / 5 | Bài toán có yêu cầu chia nhỏ nhiều bước suy luận nối tiếp nhau không? |
-| **2. Tool Interaction** | / 5 | Hệ thống có cần kết nối với MCP Server / Cơ sở dữ liệu bên ngoài không? |
-| **3. Dynamic Decision** | / 5 | Bước tiếp theo có phụ thuộc vào kết quả quan sát bước trước không? |
-| **4. Long Horizon Goal** | / 5 | Hệ thống có phải giữ mục tiêu xuyên suốt qua nhiều lượt xử lý không? |
-| **TỔNG ĐIỂM AGENTIC FIT** | **/ 20** | *Nếu tổng điểm > 12/20: Bài toán rất phù hợp triển khai Agentic System.* |
+| **1. Multi-step Reasoning** | 4 / 5 | Với yêu cầu có điều kiện, Agent phải tra cứu ngày phép, so sánh số ngày rồi mới quyết định có tạo đơn hay không. |
+| **2. Tool Interaction** | 5 / 5 | Agent cần gọi MCP Server để đọc ngày phép, quyền lợi bảo hiểm và gửi đơn nghỉ phép. Chatbot thường không tự làm được các việc này. |
+| **3. Dynamic Decision** | 5 / 5 | Bước tạo đơn phụ thuộc trực tiếp vào Observation về số ngày phép còn lại. Nếu không đủ phép thì Agent phải dừng. |
+| **4. Long Horizon Goal** | 3 / 5 | Agent phải giữ mục tiêu qua vài bước tra cứu và tạo đơn, nhưng quy trình vẫn ngắn và không kéo dài qua nhiều phiên. |
+| **TỔNG ĐIỂM AGENTIC FIT** | **17 / 20** | Bài toán đạt trên 12/20 nên phù hợp để triển khai Agentic System. |
 
 ---
 
@@ -22,26 +24,30 @@
 
 > ⚠️ **YÊU CẦU NGHIỆM THU:** Mở tệp `.env` điền `GEMINI_API_KEY` (hoặc `OPENAI_API_KEY`) để kết nối LLM thật trước khi thực thi `python src/app.py --all`. Bài nộp chỉ dùng Mock Offline Provider sẽ không đạt điểm nghiệm thực tế.
 
-Dán 1 đoạn trích xuất log tiêu biểu từ file `docs/trace_waterfall.json` sinh ra từ phản hồi LLM API thật:
+Kiểm thử Offline Mock đã chạy 5/5. Đã thử Gemini API thật: TC01, TC02, TC03 và bước tra cứu đầu của TC04 chạy bằng Gemini, nhưng free-tier chặn các lượt sau vì giới hạn 5 request/phút. Tôi sẽ chạy lại bộ test sau khi quota hồi và chỉ dùng trace có `live_api: true` cho bài nộp.
 
 ```json
 [
   {
     "step": 1,
     "action_type": "TOOL_EXECUTION",
-    "tool_name": "academic_query",
+    "query": "Kiểm tra ngày phép của VF2026001. Nếu còn ít nhất 3 ngày thì tạo đơn nghỉ phép năm từ 2026-09-21 đến 2026-09-23 vì việc gia đình.",
+    "tool_name": "employee_hr_query",
     "arguments": {
-      "student_id": "SV2026001"
+      "employee_id": "VF2026001",
+      "query_type": "leave_balance"
     },
     "observation": {
       "status": "SUCCESS",
-      "student_id": "SV2026001",
+      "employee_id": "VF2026001",
+      "query_type": "leave_balance",
       "data": {
         "full_name": "Nguyễn Văn An",
-        "gpa": 3.85
+        "department": "Phân tích dữ liệu",
+        "annual_leave_remaining": 10
       }
     },
-    "latency_ms": 120.5
+    "latency_ms": 0.01
   }
 ]
 ```
@@ -50,9 +56,10 @@ Dán 1 đoạn trích xuất log tiêu biểu từ file `docs/trace_waterfall.js
 
 ## 3. TỔNG KẾT KẾT QUẢ NGHIỆM THU & NỘP BÀI
 
-- [ ] Đã điền API Key thật trong `.env` và xác nhận Agent chạy mượt mà trên LLM API thật (Gemini/OpenAI).
-- **Tổng số Test Cases đã chạy thành công:** ___ / 5 test cases.
-- **Số lượt gọi Tool qua MCP Server chính xác:** ___ lượt.
+- [ ] Đã điền API Key thật trong `.env` và xác nhận Agent chạy mượt mà trên LLM API thật (Gemini/OpenAI). *(Đã có key; đã chạy một phần nhưng chưa đạt 5/5 vì quota.)*
+- **Kết quả kiểm thử Offline Mock:** 5 / 5 test cases.
+- **Tổng số Test Cases chạy bằng API thật:** ___ / 5 test cases.
+- **Số lượt gọi Tool qua MCP Server trong lần chạy Mock:** 5 lượt.
 - **Kết quả đẩy Repo nộp bài:** [ ] Đã Commit và Push mã nguồn thành công lên GitHub cá nhân.
 
 ---

@@ -1,29 +1,45 @@
 [
   {
     "step": 1,
-    "query": "Chào bạn, bạn có thể giới thiệu quy chế học vụ cơ bản của Đại học VinUni không?",
-    "action_type": "FINAL_ANSWER",
-    "thought": "Câu hỏi chung về quy chế học vụ, trả lời trực tiếp không cần gọi Tool.",
-    "output": "[Mock Agent Response]: Xin chào! Quy chế học vụ VinUni yêu cầu sinh viên tích lũy tối thiểu 120 tín chỉ và duy trì GPA trên 2.0 để tốt nghiệp.",
-    "latency_ms": 2845.93
-  },
-  {
-    "step": 1,
-    "query": "Hãy tra cứu thông tin học vụ của sinh viên SV2026001.",
+    "query": "Tra cứu thông tin bảo hiểm hiện tại của nhân viên VF2026001.",
     "action_type": "TOOL_EXECUTION",
-    "tool_name": "academic_query",
+    "tool_name": "employee_hr_query",
     "arguments": {
-      "student_id": "SV2026001"
+      "employee_id": "VF2026001",
+      "query_type": "insurance_policy"
     },
-    "observation": {},
-    "latency_ms": 799.12
+    "observation": {
+      "status": "SUCCESS",
+      "employee_id": "VF2026001",
+      "query_type": "insurance_policy",
+      "data": {
+        "full_name": "Nguyễn Văn An",
+        "department": "Phân tích dữ liệu",
+        "insurance": {
+          "plan_name": "Gói bảo hiểm nhân viên tiêu chuẩn (mô phỏng)",
+          "enrollment_status": "Đang tham gia",
+          "coverage": [
+            "Khám ngoại trú",
+            "Điều trị nội trú",
+            "Tai nạn lao động"
+          ],
+          "valid_until": "2026-12-31",
+          "note": "Dữ liệu mô phỏng phục vụ bài lab, không phải chính sách thật của VinFast."
+        }
+      }
+    },
+    "llm_provider": "GeminiProvider",
+    "live_api": false,
+    "latency_ms": 1388.76
   },
   {
     "step": 2,
-    "query": "Hãy tra cứu thông tin học vụ của sinh viên SV2026001.",
+    "query": "Tra cứu thông tin bảo hiểm hiện tại của nhân viên VF2026001.",
     "action_type": "FINAL_ANSWER",
-    "thought": "Tổng hợp kết quả từ MCP Server thành công.",
-    "output": "Chưa thể trả lời chi tiết do chưa nhận được dữ liệu từ MCP Server (hãy hoàn thành TODO 2.1).",
-    "latency_ms": 10.0
+    "thought": "Đã nhận quyền lợi bảo hiểm từ tool và có thể tổng hợp câu trả lời.",
+    "output": "Nhân viên VF2026001 đang tham gia gói bảo hiểm nhân viên tiêu chuẩn (dữ liệu mô phỏng), gồm khám ngoại trú, điều trị nội trú và tai nạn lao động; gói có hiệu lực đến 2026-12-31.",
+    "llm_provider": "GeminiProvider",
+    "live_api": false,
+    "latency_ms": 1023.54
   }
 ]

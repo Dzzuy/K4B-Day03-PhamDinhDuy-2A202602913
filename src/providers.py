@@ -6,6 +6,8 @@ Hỗ trợ Native Tool Calling và chuyển đổi linh hoạt qua biến môi t
 import os
 import sys
 import json
+import re
+from datetime import datetime
 from typing import Dict, Any, List
 from dotenv import load_dotenv
 
@@ -30,34 +32,131 @@ class MockOfflineProvider(BaseLLMProvider):
     """Offline Mock Provider dùng để chạy thử mà không tốn API Key"""
     def __init__(self):
         self.model_name = "Offline-Mock-Model-2026"
+        self.used_fallback = False
 
     def generate(self, prompt: str, system_prompt: str = "") -> str:
-        return f"[Mock Chatbot Response]: Xin chào! Tôi đã nhận được câu hỏi '{prompt}'. (Chế độ Chatbot không có Tool tra cứu dữ liệu thời gian thực)."
+        return (
+            "[Mock Chatbot Response]: Tôi có thể giải thích quy trình HR chung, "
+            "nhưng không có công cụ tra cứu hồ sơ cá nhân hoặc tạo đơn nghỉ phép."
+        )
 
     def generate_with_tools(self, prompt: str, tools_schema: List[Dict[str, Any]], system_prompt: str = "") -> Dict[str, Any]:
         prompt_lower = prompt.lower()
-        
-        # Mô phỏng nhận diện intent gọi Tool
-        if "sv2026001" in prompt_lower and "đặt lịch" in prompt_lower:
-            return {
-                "type": "tool_call",
-                "tool_name": "schedule_appointment",
-                "arguments": {"student_id": "SV2026001", "datetime_str": "14:00 15/09/2026", "advisor_name": "PGS.TS Nguyễn Văn A"},
-                "thought": "Người dùng yêu cầu đặt lịch hẹn tư vấn cho sinh viên SV2026001. Tôi sẽ gọi tool schedule_appointment."
-            }
-        elif "sv2026001" in prompt_lower or "tra cứu" in prompt_lower:
-            return {
-                "type": "tool_call",
-                "tool_name": "academic_query",
-                "arguments": {"student_id": "SV2026001"},
-                "thought": "Người dùng muốn tra cứu thông tin học vụ của sinh viên SV2026001. Tôi sẽ gọi tool academic_query."
-            }
-        else:
+        employee_match = re.search(r"\bvf\d{7}\b", prompt, re.IGNORECASE)
+        employee_id = employee_match.group(0).upper() if employee_match else ""
+        dates = re.findall(r"\b\d{4}-\d{2}-\d{2}\b", prompt)
+
+        if "[tool observation] submit_leave_request" in prompt_lower:
+            status_match = re.search(r'"status":\s*"([^"]+)"', prompt)
+            status = status_match.group(1) if status_match else ""
+            request_match = re.search(r'"request_id":\s*"([^"]+)"', prompt)
+            request_id = request_match.group(1) if request_match else ""
+            message_matches = re.findall(r'"message":\s*"([^"]+)"', prompt)
+            tool_message = message_matches[-1] if message_matches else "Yêu cầu nghỉ phép không thể hoàn tất."
             return {
                 "type": "text",
-                "content": f"[Mock Agent Response]: Xin chào! Quy chế học vụ VinUni yêu cầu sinh viên tích lũy tối thiểu 120 tín chỉ và duy trì GPA trên 2.0 để tốt nghiệp.",
-                "thought": "Câu hỏi chung về quy chế học vụ, trả lời trực tiếp không cần gọi Tool."
+                "content": (
+                    f"Đã tạo đơn nghỉ phép {request_id}. Đơn đang chờ quản lý phê duyệt."
+                    if status == "SUCCESS" and request_id else tool_message
+                ),
+                "thought": "Đã nhận kết quả từ tool tạo đơn và có thể trả lời người dùng."
             }
+
+        if "[tool observation] employee_hr_query" in prompt_lower:
+            if '"status": "not_found"' in prompt_lower:
+                return {
+                    "type": "text",
+                    "content": f"Không tìm thấy nhân viên {employee_id}. Vui lòng kiểm tra lại mã nhân viên.",
+                    "thought": "Tool không tìm thấy nhân viên nên tôi không được tự tạo dữ liệu."
+                }
+
+            if "tạo đơn" in prompt_lower and len(dates) >= 2:
+                balance_match = re.search(r'"annual_leave_remaining":\s*(\d+)', prompt)
+                remaining_days = int(balance_match.group(1)) if balance_match else 0
+                start = datetime.strptime(dates[0], "%Y-%m-%d").date()
+                end = datetime.strptime(dates[1], "%Y-%m-%d").date()
+                requested_days = (end - start).days + 1
+                if remaining_days < requested_days:
+                    return {
+                        "type": "text",
+                        "content": (
+                            f"Nhân viên {employee_id} chỉ còn {remaining_days} ngày phép, "
+                            f"không đủ cho yêu cầu {requested_days} ngày nên tôi không tạo đơn."
+                        ),
+                        "thought": "Số ngày phép còn lại không đủ, dừng trước bước tạo đơn."
+                    }
+                return {
+                    "type": "tool_call",
+                    "tool_name": "submit_leave_request",
+                    "arguments": {
+                        "employee_id": employee_id,
+                        "start_date": dates[0],
+                        "end_date": dates[1],
+                        "leave_type": "annual",
+                        "reason": "Việc gia đình"
+                    },
+                    "thought": "Nhân viên còn đủ ngày phép, tiếp tục tạo đơn theo yêu cầu."
+                }
+
+            if '"query_type": "insurance_policy"' in prompt_lower:
+                return {
+                    "type": "text",
+                    "content": (
+                        f"Nhân viên {employee_id} đang tham gia gói bảo hiểm nhân viên tiêu chuẩn "
+                        "(dữ liệu mô phỏng), gồm khám ngoại trú, điều trị nội trú và tai nạn lao động; "
+                        "gói có hiệu lực đến 2026-12-31."
+                    ),
+                    "thought": "Đã nhận quyền lợi bảo hiểm từ tool và có thể tổng hợp câu trả lời."
+                }
+
+            balance_match = re.search(r'"annual_leave_remaining":\s*(\d+)', prompt)
+            remaining_days = balance_match.group(1) if balance_match else "không xác định"
+            return {
+                "type": "text",
+                "content": f"Nhân viên {employee_id} còn {remaining_days} ngày phép năm.",
+                "thought": "Đã nhận số ngày phép từ tool và có thể trả lời người dùng."
+            }
+
+        if "bảo hiểm" in prompt_lower:
+            return {
+                "type": "tool_call",
+                "tool_name": "employee_hr_query",
+                "arguments": {"employee_id": employee_id, "query_type": "insurance_policy"},
+                "thought": "Cần tra cứu quyền lợi bảo hiểm của nhân viên từ dữ liệu HR."
+            }
+
+        if "ngày phép" in prompt_lower or "phép còn lại" in prompt_lower:
+            return {
+                "type": "tool_call",
+                "tool_name": "employee_hr_query",
+                "arguments": {"employee_id": employee_id, "query_type": "leave_balance"},
+                "thought": "Cần tra cứu số ngày phép còn lại trước khi trả lời hoặc tạo đơn."
+            }
+
+        if ("tạo đơn" in prompt_lower or "xin nghỉ" in prompt_lower) and len(dates) >= 2:
+            leave_type = "sick" if "nghỉ ốm" in prompt_lower else "unpaid" if "không lương" in prompt_lower else "annual"
+            reason_match = re.search(r"(?:lý do|vì)\s+(.+?)(?:\.|$)", prompt, re.IGNORECASE)
+            return {
+                "type": "tool_call",
+                "tool_name": "submit_leave_request",
+                "arguments": {
+                    "employee_id": employee_id,
+                    "start_date": dates[0],
+                    "end_date": dates[1],
+                    "leave_type": leave_type,
+                    "reason": reason_match.group(1).strip() if reason_match else "Theo yêu cầu của nhân viên"
+                },
+                "thought": "Yêu cầu đã có đủ thông tin để tạo đơn nghỉ phép."
+            }
+
+        return {
+            "type": "text",
+            "content": (
+                "[Mock Agent Response]: Nhân viên gửi đơn với thời gian, loại nghỉ và lý do. "
+                "Đơn sau đó được chuyển cho quản lý xem xét."
+            ),
+            "thought": "Đây là câu hỏi HR chung nên không cần gọi tool."
+        }
 
 
 class GeminiProvider(BaseLLMProvider):
@@ -65,6 +164,7 @@ class GeminiProvider(BaseLLMProvider):
     def __init__(self, api_key: str = None, model: str = None):
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
         self.model_name = model or os.getenv("LLM_MODEL") or "gemini-2.5-flash"
+        self.used_fallback = False
 
     def generate(self, prompt: str, system_prompt: str = "") -> str:
         if not self.api_key or self.api_key == "your_gemini_api_key_here":
@@ -81,6 +181,7 @@ class GeminiProvider(BaseLLMProvider):
     def generate_with_tools(self, prompt: str, tools_schema: List[Dict[str, Any]], system_prompt: str = "") -> Dict[str, Any]:
         if not self.api_key or self.api_key == "your_gemini_api_key_here":
             print("ℹ️ [Gemini Provider]: Chưa tìm thấy GEMINI_API_KEY hợp lệ. Tự động chuyển sang Mock Offline.")
+            self.used_fallback = True
             return MockOfflineProvider().generate_with_tools(prompt, tools_schema, system_prompt)
         
         try:
@@ -132,6 +233,7 @@ class GeminiProvider(BaseLLMProvider):
 
         except Exception as e:
             print(f"⚠️ [Gemini API Warning]: Không thể kết nối live API ({str(e)}). Tự động fallback về Mock.")
+            self.used_fallback = True
             return MockOfflineProvider().generate_with_tools(prompt, tools_schema, system_prompt)
 
 
@@ -140,6 +242,7 @@ class OpenAIProvider(BaseLLMProvider):
     def __init__(self, api_key: str = None, model: str = None):
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         self.model_name = model or os.getenv("LLM_MODEL") or "gpt-4o-mini"
+        self.used_fallback = False
 
     def generate(self, prompt: str, system_prompt: str = "") -> str:
         if not self.api_key or self.api_key == "your_openai_api_key_here":
@@ -159,6 +262,7 @@ class OpenAIProvider(BaseLLMProvider):
     def generate_with_tools(self, prompt: str, tools_schema: List[Dict[str, Any]], system_prompt: str = "") -> Dict[str, Any]:
         if not self.api_key or self.api_key == "your_openai_api_key_here":
             print("ℹ️ [OpenAI Provider]: Chưa tìm thấy OPENAI_API_KEY hợp lệ. Tự động chuyển sang Mock Offline.")
+            self.used_fallback = True
             return MockOfflineProvider().generate_with_tools(prompt, tools_schema, system_prompt)
 
         try:
@@ -208,6 +312,7 @@ class OpenAIProvider(BaseLLMProvider):
                 }
         except Exception as e:
             print(f"⚠️ [OpenAI API Warning]: Không thể kết nối live API ({str(e)}). Tự động fallback về Mock.")
+            self.used_fallback = True
             return MockOfflineProvider().generate_with_tools(prompt, tools_schema, system_prompt)
 
 

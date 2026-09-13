@@ -1,0 +1,37 @@
+[
+  {
+    "id": "TC01",
+    "type": "direct_query",
+    "question": "Quy trình gửi đơn xin nghỉ phép thường gồm những bước nào?",
+    "expected_behavior": "Agent trả lời quy trình HR chung, không gọi Tool vì không cần dữ liệu cá nhân.",
+    "complexity": "Low"
+  },
+  {
+    "id": "TC02",
+    "type": "single_tool_query",
+    "question": "Kiểm tra số ngày phép còn lại của nhân viên VF2026001.",
+    "expected_behavior": "Agent gọi employee_hr_query với employee_id VF2026001 và query_type leave_balance.",
+    "complexity": "Medium"
+  },
+  {
+    "id": "TC03",
+    "type": "insurance_query",
+    "question": "Tra cứu thông tin bảo hiểm hiện tại của nhân viên VF2026001.",
+    "expected_behavior": "Agent gọi employee_hr_query với query_type insurance_policy và nói rõ đây là dữ liệu mô phỏng.",
+    "complexity": "Medium"
+  },
+  {
+    "id": "TC04",
+    "type": "multi_step_reasoning",
+    "question": "Kiểm tra ngày phép của VF2026001. Nếu còn ít nhất 3 ngày thì tạo đơn nghỉ phép năm từ 2026-09-21 đến 2026-09-23 vì việc gia đình.",
+    "expected_behavior": "Agent gọi employee_hr_query trước; nếu đủ 3 ngày thì gọi submit_leave_request rồi trả mã đơn.",
+    "complexity": "High"
+  },
+  {
+    "id": "TC05",
+    "type": "edge_case_handling",
+    "question": "Tra cứu thông tin bảo hiểm của nhân viên VF9999999.",
+    "expected_behavior": "Agent nhận NOT_FOUND từ employee_hr_query, phản hồi lịch sự và không bịa quyền lợi bảo hiểm.",
+    "complexity": "Medium"
+  }
+]

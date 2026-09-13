@@ -4,6 +4,7 @@ Mã nguồn chứa danh sách Tool Schemas (JSON Schema) và Execution Layer ph�
 """
 
 import json
+from datetime import datetime
 from typing import Dict, Any
 
 # ==============================================================================
@@ -11,41 +12,63 @@ from typing import Dict, Any
 # ==============================================================================
 
 TOOLS_SCHEMA = [
-    # Tool 1: Đã được định nghĩa mẫu sẵn cho Học viên tham khảo
     {
-        "name": "academic_query",
-        "description": "Tra cứu hồ sơ và thông tin học vụ của sinh viên VinUni bằng mã sinh viên.",
+        "name": "employee_hr_query",
+        "description": (
+            "Tra cứu ngày phép còn lại hoặc quyền lợi bảo hiểm hiện tại của một "
+            "nhân viên bằng mã nhân viên. Đây là tool chỉ đọc dữ liệu."
+        ),
         "parameters": {
             "type": "object",
             "properties": {
-                "student_id": {
+                "employee_id": {
                     "type": "string",
-                    "description": "Mã sinh viên cần tra cứu (ví dụ: 'SV2026001')"
+                    "description": "Mã nhân viên cần tra cứu (ví dụ: 'VF2026001')"
+                },
+                "query_type": {
+                    "type": "string",
+                    "enum": ["leave_balance", "insurance_policy"],
+                    "description": (
+                        "Loại thông tin cần tra cứu: 'leave_balance' cho ngày phép "
+                        "còn lại hoặc 'insurance_policy' cho quyền lợi bảo hiểm."
+                    )
                 }
             },
-            "required": ["student_id"]
+            "required": ["employee_id", "query_type"]
         }
     },
-    
-    # --------------------------------------------------------------------------
-    # TODO 1.2: HỌC VIÊN HOÀN THIỆN TOOL SCHEMA CHO 'schedule_appointment'
-    # 🎯 YÊU CẦU THIẾT KẾ SCHEMA (JSON SCHEMA STANDARD):
-    # 1. Tool dùng để đặt lịch hẹn tư vấn học vụ với Cố vấn học tập VinUni.
-    # 2. Thiết kế các tham số (properties) để LLM trích xuất:
-    #    - student_id (string): Mã sinh viên cần đặt lịch (ví dụ: 'SV2026001')
-    #    - datetime_str (string): Thời gian hẹn (ví dụ: '14:00 15/09/2026')
-    #    - advisor_name (string): Tên cố vấn học tập
-    # 3. Khai báo danh sách các trường bắt buộc (required).
-    # --------------------------------------------------------------------------
     {
-        "name": "schedule_appointment",
-        "description": "Đặt lịch hẹn tư vấn học vụ với Cố vấn học tập VinUni.",
+        "name": "submit_leave_request",
+        "description": (
+            "Tạo đơn xin nghỉ phép cho nhân viên. Chỉ gọi khi đã có đủ mã nhân viên, "
+            "ngày bắt đầu, ngày kết thúc, loại nghỉ và lý do."
+        ),
         "parameters": {
             "type": "object",
             "properties": {
-                # TODO 1.2: Khai báo các thuộc tính tham số cho Tool tại đây...
+                "employee_id": {
+                    "type": "string",
+                    "description": "Mã nhân viên tạo đơn (ví dụ: 'VF2026001')"
+                },
+                "start_date": {
+                    "type": "string",
+                    "description": "Ngày bắt đầu nghỉ theo định dạng YYYY-MM-DD"
+                },
+                "end_date": {
+                    "type": "string",
+                    "description": "Ngày kết thúc nghỉ theo định dạng YYYY-MM-DD"
+                },
+                "leave_type": {
+                    "type": "string",
+                    "enum": ["annual", "sick", "unpaid"],
+                    "description": "Loại nghỉ: phép năm, nghỉ ốm hoặc nghỉ không lương"
+                },
+                "reason": {
+                    "type": "string",
+                    "description": "Lý do xin nghỉ, viết ngắn gọn và rõ ràng"
+                }
             },
-            "required": [] # TODO 1.2: Khai báo danh sách các trường bắt buộc tại đây...
+            "required": ["employee_id", "start_date", "end_date", "leave_type", "reason"]
         }
     }
 ]
@@ -54,58 +77,146 @@ TOOLS_SCHEMA = [
 # 2. MÔ PHỎNG DỮ LIỆU & HÀM THỰC THI TOOL (EXECUTION LAYER)
 # ==============================================================================
 
-MOCK_DATABASE = {
-    "SV2026001": {
+MOCK_EMPLOYEE_DATABASE = {
+    "VF2026001": {
         "full_name": "Nguyễn Văn An",
-        "class": "AI-K4",
-        "gpa": 3.85,
-        "email": "an.nv@vinuni.edu.vn",
-        "status": "Đang học",
-        "advisor": "PGS.TS Nguyễn Văn A"
+        "department": "Phân tích dữ liệu",
+        "position": "Data Analyst",
+        "annual_leave_remaining": 10,
+        "insurance": {
+            "plan_name": "Gói bảo hiểm nhân viên tiêu chuẩn (mô phỏng)",
+            "enrollment_status": "Đang tham gia",
+            "coverage": ["Khám ngoại trú", "Điều trị nội trú", "Tai nạn lao động"],
+            "valid_until": "2026-12-31"
+        }
     },
-    "SV2026002": {
+    "VF2026002": {
         "full_name": "Trần Thị Bình",
-        "class": "AI-K4",
-        "gpa": 3.60,
-        "email": "binh.tt@vinuni.edu.vn",
-        "status": "Đang học",
-        "advisor": "TS. Lê Thị B"
+        "department": "Vận hành",
+        "position": "Operations Specialist",
+        "annual_leave_remaining": 2,
+        "insurance": {
+            "plan_name": "Gói bảo hiểm nhân viên tiêu chuẩn (mô phỏng)",
+            "enrollment_status": "Đang tham gia",
+            "coverage": ["Điều trị nội trú", "Tai nạn lao động"],
+            "valid_until": "2026-12-31"
+        }
     }
 }
 
+LEAVE_REQUESTS = []
 
-def execute_academic_query(student_id: str) -> str:
-    """Thực thi tra cứu học vụ theo mã sinh viên"""
-    student = MOCK_DATABASE.get(student_id.strip().upper())
-    if student:
-        return json.dumps({
-            "status": "SUCCESS",
-            "student_id": student_id,
-            "data": student
-        }, ensure_ascii=False)
-    else:
+
+def execute_employee_hr_query(employee_id: str, query_type: str) -> str:
+    """Tra cứu ngày phép hoặc quyền lợi bảo hiểm từ dữ liệu HR mô phỏng."""
+    normalized_id = employee_id.strip().upper()
+    employee = MOCK_EMPLOYEE_DATABASE.get(normalized_id)
+
+    if not employee:
         return json.dumps({
             "status": "NOT_FOUND",
-            "message": f"Không tìm thấy dữ liệu sinh viên có mã '{student_id}'"
+            "message": f"Không tìm thấy nhân viên có mã '{normalized_id}'. Hãy kiểm tra lại mã nhân viên."
         }, ensure_ascii=False)
 
+    if query_type == "leave_balance":
+        data = {
+            "full_name": employee["full_name"],
+            "department": employee["department"],
+            "annual_leave_remaining": employee["annual_leave_remaining"]
+        }
+    elif query_type == "insurance_policy":
+        data = {
+            "full_name": employee["full_name"],
+            "department": employee["department"],
+            "insurance": employee["insurance"]
+        }
+    else:
+        return json.dumps({
+            "status": "INVALID_ARGUMENT",
+            "message": "query_type chỉ nhận 'leave_balance' hoặc 'insurance_policy'."
+        }, ensure_ascii=False)
 
-def execute_schedule_appointment(student_id: str, datetime_str: str, advisor_name: str = "PGS.TS Nguyễn Văn A") -> str:
-    """Thực thi đặt lịch hẹn tư vấn học vụ"""
     return json.dumps({
         "status": "SUCCESS",
-        "booking_id": f"BK-{student_id}-99",
-        "student_id": student_id,
-        "datetime": datetime_str,
-        "advisor": advisor_name,
-        "message": f"Đặt lịch thành công cho sinh viên {student_id} với {advisor_name} vào lúc {datetime_str}."
+        "employee_id": normalized_id,
+        "query_type": query_type,
+        "data": data
+    }, ensure_ascii=False)
+
+
+def execute_submit_leave_request(
+    employee_id: str,
+    start_date: str,
+    end_date: str,
+    leave_type: str,
+    reason: str
+) -> str:
+    """Tạo đơn nghỉ phép sau khi kiểm tra mã nhân viên, ngày và số phép còn lại."""
+    normalized_id = employee_id.strip().upper()
+    employee = MOCK_EMPLOYEE_DATABASE.get(normalized_id)
+
+    if not employee:
+        return json.dumps({
+            "status": "NOT_FOUND",
+            "message": f"Không tìm thấy nhân viên có mã '{normalized_id}'. Không thể tạo đơn."
+        }, ensure_ascii=False)
+
+    if leave_type not in {"annual", "sick", "unpaid"}:
+        return json.dumps({
+            "status": "INVALID_ARGUMENT",
+            "message": "leave_type chỉ nhận 'annual', 'sick' hoặc 'unpaid'."
+        }, ensure_ascii=False)
+
+    try:
+        start = datetime.strptime(start_date, "%Y-%m-%d").date()
+        end = datetime.strptime(end_date, "%Y-%m-%d").date()
+    except ValueError:
+        return json.dumps({
+            "status": "INVALID_ARGUMENT",
+            "message": "Ngày phải có định dạng YYYY-MM-DD, ví dụ 2026-09-21."
+        }, ensure_ascii=False)
+
+    if start > end:
+        return json.dumps({
+            "status": "INVALID_ARGUMENT",
+            "message": "Ngày bắt đầu không được sau ngày kết thúc."
+        }, ensure_ascii=False)
+
+    requested_days = (end - start).days + 1
+    remaining_days = employee["annual_leave_remaining"]
+    if leave_type == "annual" and requested_days > remaining_days:
+        return json.dumps({
+            "status": "INSUFFICIENT_LEAVE",
+            "requested_days": requested_days,
+            "remaining_days": remaining_days,
+            "message": "Số ngày xin nghỉ vượt quá số ngày phép năm còn lại."
+        }, ensure_ascii=False)
+
+    request_id = f"LR-{normalized_id}-{len(LEAVE_REQUESTS) + 1:03d}"
+    request = {
+        "request_id": request_id,
+        "employee_id": normalized_id,
+        "start_date": start_date,
+        "end_date": end_date,
+        "requested_days": requested_days,
+        "leave_type": leave_type,
+        "reason": reason.strip(),
+        "approval_status": "PENDING"
+    }
+    LEAVE_REQUESTS.append(request)
+
+    return json.dumps({
+        "status": "SUCCESS",
+        **request,
+        "remaining_days_before_approval": remaining_days,
+        "message": f"Đã tạo đơn {request_id}. Đơn đang chờ quản lý phê duyệt."
     }, ensure_ascii=False)
 
 
 # Router gọi tool thực tế
 TOOL_ROUTER = {
-    "academic_query": execute_academic_query,
-    "schedule_appointment": execute_schedule_appointment
+    "employee_hr_query": execute_employee_hr_query,
+    "submit_leave_request": execute_submit_leave_request
 }
 
 def dispatch_tool_call(tool_name: str, arguments: Dict[str, Any]) -> str:
