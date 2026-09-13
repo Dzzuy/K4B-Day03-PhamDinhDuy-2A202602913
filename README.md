@@ -41,6 +41,18 @@ cp config/test_cases.example.json config/test_cases.json
 python src/app.py --all
 ```
 
+### Chạy web demo VinHR Agent Lab
+```bash
+# Terminal đang kích hoạt .venv
+python src/web_app.py
+```
+
+Mở trình duyệt tại `http://127.0.0.1:8000`.
+
+- `LLM_PROVIDER=mock`: demo offline, không cần API key.
+- `LLM_PROVIDER=gemini`, `openai` hoặc `shopapi`: web hiển thị `LIVE API` khi provider gọi thành công; nếu lỗi sẽ hiện `MOCK FALLBACK`.
+- Với ShopAIKey, điền `SHOPAPI_BASE_URL`, `SHOPAPI_MODEL` và `SHOPAPI_API_KEY` trong `.env`. Không đưa API key vào mã nguồn hoặc frontend.
+
 **Kỳ vọng Output màn hình:**
 ```text
 ✅ [MOCK OFFLINE MODE PASS]: Môi trường đã sẵn sàng! 

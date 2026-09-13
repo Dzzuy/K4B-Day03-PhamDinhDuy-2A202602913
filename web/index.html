@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VinHR Agent Lab</title>
+  <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#workspace" aria-label="VinHR Agent Lab, về đầu trang"><span class="brand-mark" aria-hidden="true">V</span><span>VinHR Agent Lab</span></a>
+    <p>Chatbot vs ReAct Agent <span aria-hidden="true">·</span> MCP Tool Execution Demo</p>
+    <div class="runtime" id="runtime-status" aria-live="polite">Đang kiểm tra runtime…</div>
+  </header>
+
+  <main id="workspace" class="workspace">
+    <aside class="left-panel" aria-label="Kịch bản demo và công cụ">
+      <section>
+        <div class="section-heading"><p class="eyebrow">KỊCH BẢN DEMO</p><span id="scenario-count" class="count">0</span></div>
+        <div id="scenario-list" class="scenario-list" aria-live="polite"></div>
+      </section>
+      <section class="tool-section">
+        <div class="section-heading"><p class="eyebrow">MCP TOOLS</p><span class="count">2</span></div>
+        <div id="tool-list" class="tool-list"></div>
+      </section>
+      <p class="simulation-label">Dữ liệu nhân viên và đơn nghỉ bên dưới là dữ liệu demo mô phỏng.</p>
+    </aside>
+
+    <section class="chat-panel" aria-label="Khu vực hội thoại">
+      <div class="chat-head">
+        <div><p class="eyebrow">KHÔNG GIAN LÀM VIỆC</p><h1>Hỏi VinHR Agent</h1></div>
+        <div class="mode-switch" role="group" aria-label="Chọn chế độ demo">
+          <button class="mode-button" type="button" data-mode="chatbot" aria-pressed="false">Chatbot</button>
+          <button class="mode-button active" type="button" data-mode="agent" aria-pressed="true">ReAct Agent</button>
+        </div>
+      </div>
+
+      <div id="chat-log" class="chat-log" aria-live="polite">
+        <div class="empty-state" id="empty-state">
+          <p class="empty-title">Sẵn sàng cho phiên demo</p>
+          <p>Chọn một kịch bản ở bên trái hoặc nhập câu hỏi HR. ReAct Agent sẽ hiển thị từng bước ở trace inspector.</p>
+        </div>
+      </div>
+
+      <form id="chat-form" class="composer">
+        <label class="sr-only" for="query">Câu hỏi HR</label>
+        <textarea id="query" name="query" rows="2" maxlength="1500" placeholder="Ví dụ: VF2026001 còn bao nhiêu ngày phép?" required></textarea>
+        <div class="composer-actions">
+          <span id="form-hint">Enter để gửi · Shift + Enter xuống dòng</span>
+          <button id="send-button" class="send-button" type="submit">Gửi câu hỏi</button>
+        </div>
+      </form>
+    </section>
+
+    <aside class="trace-panel" aria-label="ReAct trace inspector">
+      <div class="trace-head"><div><p class="eyebrow">TRACE INSPECTOR</p><h2>Waterfall ReAct</h2></div><button id="clear-button" class="text-button" type="button">Xoá phiên</button></div>
+      <div id="trace-meta" class="trace-meta">Chưa có lượt chạy</div>
+      <div id="trace-list" class="trace-list">
+        <div class="trace-empty">Thought, Action, Observation và Final Answer sẽ hiện ở đây.</div>
+      </div>
+    </aside>
+  </main>
+
+  <template id="message-template"><article class="message"><p class="message-label"></p><p class="message-content"></p><div class="message-actions"><button class="copy-button" type="button">Sao chép câu trả lời</button></div></article></template>
+  <script src="/assets/app.js" defer></script>
+</body>
+</html>

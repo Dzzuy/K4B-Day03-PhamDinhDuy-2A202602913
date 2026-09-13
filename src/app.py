@@ -86,7 +86,7 @@ def run_react_agent(user_query: str, provider, mcp_server: MCPHRServer) -> list:
         )
         latency_ms = round((time.time() - step_start_time) * 1000, 2)
         provider_name = provider.__class__.__name__
-        live_api = provider_name in {"GeminiProvider", "OpenAIProvider"} and not getattr(provider, "used_fallback", False)
+        live_api = provider_name in {"GeminiProvider", "OpenAIProvider", "ShopAIProvider"} and not getattr(provider, "used_fallback", False)
         
         thought = llm_response.get("thought", "Đang suy luận...")
         print(f"🧠 [Thought]: {thought}")
@@ -124,6 +124,7 @@ def run_react_agent(user_query: str, provider, mcp_server: MCPHRServer) -> list:
                 "step": step,
                 "query": user_query,
                 "action_type": "TOOL_EXECUTION",
+                "thought": thought,
                 "tool_name": tool_name,
                 "arguments": arguments,
                 "observation": obs_data,
@@ -223,7 +224,7 @@ if __name__ == "__main__":
         if all_traces:
             save_waterfall_trace(all_traces)
         live_run = (
-            provider.__class__.__name__ in {"GeminiProvider", "OpenAIProvider"}
+            provider.__class__.__name__ in {"GeminiProvider", "OpenAIProvider", "ShopAIProvider"}
             and not getattr(provider, "used_fallback", False)
         )
         if live_run:

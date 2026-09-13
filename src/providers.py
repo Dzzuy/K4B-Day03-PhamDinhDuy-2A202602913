@@ -316,6 +316,94 @@ class OpenAIProvider(BaseLLMProvider):
             return MockOfflineProvider().generate_with_tools(prompt, tools_schema, system_prompt)
 
 
+class ShopAIProvider(BaseLLMProvider):
+    """ShopAIKey provider qua OpenAI-compatible Chat Completions API."""
+    def __init__(self, api_key: str = None, model: str = None, base_url: str = None):
+        self.api_key = api_key or os.getenv("SHOPAPI_API_KEY")
+        self.model_name = model or os.getenv("SHOPAPI_MODEL") or "gemini-2.5-flash"
+        self.base_url = base_url or os.getenv("SHOPAPI_BASE_URL") or "https://api.shopaikey.com/v1"
+        self.used_fallback = False
+        self.fallback_reason = ""
+
+    @property
+    def is_configured(self) -> bool:
+        return bool(self.api_key and self.api_key != "replace_with_your_key")
+
+    def _fallback(self, prompt: str, tools_schema: List[Dict[str, Any]], system_prompt: str, reason: str) -> Dict[str, Any]:
+        self.used_fallback = True
+        self.fallback_reason = reason
+        print("⚠️ [ShopAIKey]: Live API không khả dụng, chuyển sang Mock Offline.")
+        return MockOfflineProvider().generate_with_tools(prompt, tools_schema, system_prompt)
+
+    @staticmethod
+    def _to_openai_tools(tools_schema: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        return [
+            {
+                "type": "function",
+                "function": {
+                    "name": tool["name"],
+                    "description": tool.get("description", ""),
+                    "parameters": tool.get("parameters", {})
+                }
+            }
+            for tool in tools_schema
+            if tool.get("name") and tool.get("parameters")
+        ]
+
+    def generate(self, prompt: str, system_prompt: str = "") -> str:
+        if not self.is_configured:
+            self.used_fallback = True
+            self.fallback_reason = "Chưa cấu hình SHOPAPI_API_KEY"
+            return MockOfflineProvider().generate(prompt, system_prompt)
+        try:
+            from openai import OpenAI
+            messages = ([{"role": "system", "content": system_prompt}] if system_prompt else [])
+            messages.append({"role": "user", "content": prompt})
+            client = OpenAI(api_key=self.api_key, base_url=self.base_url)
+            response = client.chat.completions.create(model=self.model_name, messages=messages)
+            return response.choices[0].message.content or ""
+        except Exception as exc:
+            self.used_fallback = True
+            self.fallback_reason = exc.__class__.__name__
+            return MockOfflineProvider().generate(prompt, system_prompt)
+
+    def generate_with_tools(self, prompt: str, tools_schema: List[Dict[str, Any]], system_prompt: str = "") -> Dict[str, Any]:
+        if not self.is_configured:
+            return self._fallback(prompt, tools_schema, system_prompt, "Chưa cấu hình SHOPAPI_API_KEY")
+        try:
+            from openai import OpenAI
+            messages = ([{"role": "system", "content": system_prompt}] if system_prompt else [])
+            messages.append({"role": "user", "content": prompt})
+            client = OpenAI(api_key=self.api_key, base_url=self.base_url)
+            tools = self._to_openai_tools(tools_schema)
+            response = client.chat.completions.create(
+                model=self.model_name,
+                messages=messages,
+                tools=tools or None,
+                tool_choice="auto" if tools else None
+            )
+            message = response.choices[0].message
+            if message.tool_calls:
+                call = message.tool_calls[0]
+                raw_arguments = call.function.arguments or "{}"
+                arguments = json.loads(raw_arguments)
+                if not isinstance(arguments, dict):
+                    raise ValueError("Tool arguments phải là JSON object")
+                return {
+                    "type": "tool_call",
+                    "tool_name": call.function.name,
+                    "arguments": arguments,
+                    "thought": f"ShopAIKey quyết định gọi công cụ '{call.function.name}'."
+                }
+            return {
+                "type": "text",
+                "content": message.content or "",
+                "thought": "ShopAIKey phản hồi trực tiếp bằng văn bản."
+            }
+        except Exception as exc:
+            return self._fallback(prompt, tools_schema, system_prompt, exc.__class__.__name__)
+
+
 def get_llm_provider() -> BaseLLMProvider:
     """Factory function khởi tạo Provider theo LLM_PROVIDER env variable"""
     provider_type = os.getenv("LLM_PROVIDER", "gemini").lower()
@@ -332,6 +420,8 @@ def get_llm_provider() -> BaseLLMProvider:
             return OpenAIProvider()
         else:
             return MockOfflineProvider()
+    elif provider_type == "shopapi":
+        return ShopAIProvider()
     elif provider_type == "mock":
         return MockOfflineProvider()
     else:

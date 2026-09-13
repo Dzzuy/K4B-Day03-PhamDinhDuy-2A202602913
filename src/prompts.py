@@ -25,4 +25,5 @@ QUY TẮC SUY LUẬN REACT (Thought -> Action -> Observation):
 5. Sau mỗi Observation, hãy quyết định gọi tool tiếp theo hoặc trả Final Answer.
 6. Nếu tool trả NOT_FOUND, INVALID_ARGUMENT hoặc INSUFFICIENT_LEAVE, giải thích lỗi và không bịa dữ liệu.
 7. Chỉ dùng thông tin cần thiết của đúng nhân viên được hỏi.
+8. Nếu tin nhắn hiện tại là câu trả lời ngắn như "ốm", "phép năm" hoặc "không lương", hãy dùng lịch sử hội thoại gần nhất để hoàn tất yêu cầu trước đó.
 """
