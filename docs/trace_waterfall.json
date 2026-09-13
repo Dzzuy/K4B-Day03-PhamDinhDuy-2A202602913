@@ -1,8 +1,53 @@
 [
   {
     "step": 1,
+    "query": "Quy trình gửi đơn xin nghỉ phép thường gồm những bước nào?",
+    "action_type": "FINAL_ANSWER",
+    "thought": "ShopAIKey phản hồi trực tiếp bằng văn bản.",
+    "output": "Để gửi đơn xin nghỉ phép, bạn cần thực hiện các bước sau:\n1. Xác định loại nghỉ phép (phép năm, nghỉ ốm, nghỉ không lương).\n2. Chuẩn bị các thông tin cần thiết: Mã nhân viên, ngày bắt đầu nghỉ, ngày kết thúc nghỉ, và lý do nghỉ.\n3. Gửi yêu cầu nghỉ phép của bạn. Hệ thống sẽ xử lý và thông báo kết quả.",
+    "llm_provider": "ShopAIProvider",
+    "live_api": true,
+    "latency_ms": 5077.72
+  },
+  {
+    "step": 1,
+    "query": "Kiểm tra số ngày phép còn lại của nhân viên VF2026001.",
+    "action_type": "TOOL_EXECUTION",
+    "thought": "ShopAIKey quyết định gọi công cụ 'employee_hr_query'.",
+    "tool_name": "employee_hr_query",
+    "arguments": {
+      "employee_id": "VF2026001",
+      "query_type": "leave_balance"
+    },
+    "observation": {
+      "status": "SUCCESS",
+      "employee_id": "VF2026001",
+      "query_type": "leave_balance",
+      "data": {
+        "full_name": "Nguyễn Văn An",
+        "department": "Phân tích dữ liệu",
+        "annual_leave_remaining": 10
+      }
+    },
+    "llm_provider": "ShopAIProvider",
+    "live_api": true,
+    "latency_ms": 2143.43
+  },
+  {
+    "step": 2,
+    "query": "Kiểm tra số ngày phép còn lại của nhân viên VF2026001.",
+    "action_type": "FINAL_ANSWER",
+    "thought": "ShopAIKey phản hồi trực tiếp bằng văn bản.",
+    "output": "Anh Nguyễn Văn An (VF2026001) hiện còn lại 10 ngày phép năm.",
+    "llm_provider": "ShopAIProvider",
+    "live_api": true,
+    "latency_ms": 4256.99
+  },
+  {
+    "step": 1,
     "query": "Tra cứu thông tin bảo hiểm hiện tại của nhân viên VF2026001.",
     "action_type": "TOOL_EXECUTION",
+    "thought": "ShopAIKey quyết định gọi công cụ 'employee_hr_query'.",
     "tool_name": "employee_hr_query",
     "arguments": {
       "employee_id": "VF2026001",
@@ -23,23 +68,114 @@
             "Điều trị nội trú",
             "Tai nạn lao động"
           ],
-          "valid_until": "2026-12-31",
-          "note": "Dữ liệu mô phỏng phục vụ bài lab, không phải chính sách thật của VinFast."
+          "valid_until": "2026-12-31"
         }
       }
     },
-    "llm_provider": "GeminiProvider",
-    "live_api": false,
-    "latency_ms": 1388.76
+    "llm_provider": "ShopAIProvider",
+    "live_api": true,
+    "latency_ms": 2824.6
   },
   {
     "step": 2,
     "query": "Tra cứu thông tin bảo hiểm hiện tại của nhân viên VF2026001.",
     "action_type": "FINAL_ANSWER",
-    "thought": "Đã nhận quyền lợi bảo hiểm từ tool và có thể tổng hợp câu trả lời.",
-    "output": "Nhân viên VF2026001 đang tham gia gói bảo hiểm nhân viên tiêu chuẩn (dữ liệu mô phỏng), gồm khám ngoại trú, điều trị nội trú và tai nạn lao động; gói có hiệu lực đến 2026-12-31.",
-    "llm_provider": "GeminiProvider",
-    "live_api": false,
-    "latency_ms": 1023.54
+    "thought": "ShopAIKey phản hồi trực tiếp bằng văn bản.",
+    "output": "Thông tin bảo hiểm hiện tại của nhân viên Nguyễn Văn An (Mã NV: VF2026001):\n*   **Tên gói bảo hiểm:** Gói bảo hiểm nhân viên tiêu chuẩn (mô phỏng)\n*   **Trạng thái tham gia:** Đang tham gia\n*   **Phạm vi bảo hiểm:** Khám ngoại trú, Điều trị nội trú, Tai nạn lao động\n*   **Hiệu lực đến:** 31/12/2026",
+    "llm_provider": "ShopAIProvider",
+    "live_api": true,
+    "latency_ms": 4621.56
+  },
+  {
+    "step": 1,
+    "query": "Kiểm tra ngày phép của VF2026001. Nếu còn ít nhất 3 ngày thì tạo đơn nghỉ phép năm từ 2026-09-21 đến 2026-09-23 vì việc gia đình.",
+    "action_type": "TOOL_EXECUTION",
+    "thought": "ShopAIKey quyết định gọi công cụ 'employee_hr_query'.",
+    "tool_name": "employee_hr_query",
+    "arguments": {
+      "employee_id": "VF2026001",
+      "query_type": "leave_balance"
+    },
+    "observation": {
+      "status": "SUCCESS",
+      "employee_id": "VF2026001",
+      "query_type": "leave_balance",
+      "data": {
+        "full_name": "Nguyễn Văn An",
+        "department": "Phân tích dữ liệu",
+        "annual_leave_remaining": 10
+      }
+    },
+    "llm_provider": "ShopAIProvider",
+    "live_api": true,
+    "latency_ms": 3163.13
+  },
+  {
+    "step": 2,
+    "query": "Kiểm tra ngày phép của VF2026001. Nếu còn ít nhất 3 ngày thì tạo đơn nghỉ phép năm từ 2026-09-21 đến 2026-09-23 vì việc gia đình.",
+    "action_type": "TOOL_EXECUTION",
+    "thought": "ShopAIKey quyết định gọi công cụ 'submit_leave_request'.",
+    "tool_name": "submit_leave_request",
+    "arguments": {
+      "employee_id": "VF2026001",
+      "end_date": "2026-09-23",
+      "leave_type": "annual",
+      "reason": "việc gia đình",
+      "start_date": "2026-09-21"
+    },
+    "observation": {
+      "status": "SUCCESS",
+      "request_id": "LR-VF2026001-001",
+      "employee_id": "VF2026001",
+      "start_date": "2026-09-21",
+      "end_date": "2026-09-23",
+      "requested_days": 3,
+      "leave_type": "annual",
+      "reason": "việc gia đình",
+      "approval_status": "PENDING",
+      "remaining_days_before_approval": 10,
+      "message": "Đã tạo đơn LR-VF2026001-001. Đơn đang chờ quản lý phê duyệt."
+    },
+    "llm_provider": "ShopAIProvider",
+    "live_api": true,
+    "latency_ms": 4800.58
+  },
+  {
+    "step": 3,
+    "query": "Kiểm tra ngày phép của VF2026001. Nếu còn ít nhất 3 ngày thì tạo đơn nghỉ phép năm từ 2026-09-21 đến 2026-09-23 vì việc gia đình.",
+    "action_type": "FINAL_ANSWER",
+    "thought": "ShopAIKey phản hồi trực tiếp bằng văn bản.",
+    "output": "Đã tạo đơn xin nghỉ phép năm cho mã nhân viên VF2026001 từ 2026-09-21 đến 2026-09-23 vì việc gia đình. Mã đơn là LR-VF2026001-001 và đang chờ quản lý phê duyệt.",
+    "llm_provider": "ShopAIProvider",
+    "live_api": true,
+    "latency_ms": 3258.13
+  },
+  {
+    "step": 1,
+    "query": "Tra cứu thông tin bảo hiểm của nhân viên VF9999999.",
+    "action_type": "TOOL_EXECUTION",
+    "thought": "ShopAIKey quyết định gọi công cụ 'employee_hr_query'.",
+    "tool_name": "employee_hr_query",
+    "arguments": {
+      "employee_id": "VF9999999",
+      "query_type": "insurance_policy"
+    },
+    "observation": {
+      "status": "NOT_FOUND",
+      "message": "Không tìm thấy nhân viên có mã 'VF9999999'. Hãy kiểm tra lại mã nhân viên."
+    },
+    "llm_provider": "ShopAIProvider",
+    "live_api": true,
+    "latency_ms": 3122.52
+  },
+  {
+    "step": 2,
+    "query": "Tra cứu thông tin bảo hiểm của nhân viên VF9999999.",
+    "action_type": "FINAL_ANSWER",
+    "thought": "ShopAIKey phản hồi trực tiếp bằng văn bản.",
+    "output": "Không tìm thấy nhân viên có mã 'VF9999999'. Vui lòng kiểm tra lại mã nhân viên và thử lại.",
+    "llm_provider": "ShopAIProvider",
+    "live_api": true,
+    "latency_ms": 2530.29
   }
 ]

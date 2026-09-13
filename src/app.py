@@ -61,6 +61,17 @@ def run_baseline_chatbot(user_query: str, provider):
     print(f"🤖 Chatbot phản hồi:\n{response}")
 
 
+def clean_final_answer(content: str) -> str:
+    """Loại bỏ nhãn suy luận nếu LLM lỡ đưa Thought vào phần trả lời cuối."""
+    answer = (content or "").strip()
+    if answer.lower().startswith("thought:") and "\n" in answer:
+        answer = answer.split("\n", 1)[1].strip()
+    for prefix in ("Final Answer:", "Final answer:"):
+        if answer.startswith(prefix):
+            answer = answer[len(prefix):].strip()
+    return answer
+
+
 def run_react_agent(user_query: str, provider, mcp_server: MCPHRServer) -> list:
     """
     [REACT AGENT LOOP] Thực thi vòng lặp Thought -> Action -> Observation với MCP Server
@@ -93,7 +104,7 @@ def run_react_agent(user_query: str, provider, mcp_server: MCPHRServer) -> list:
         
         # Trường hợp 1: LLM quyết định trả lời bằng văn bản trực tiếp
         if llm_response.get("type") == "text":
-            final_content = llm_response.get("content", "")
+            final_content = clean_final_answer(llm_response.get("content", ""))
             print(f"🏁 [Final Answer]: {final_content}")
             trace_logs.append({
                 "step": step,
